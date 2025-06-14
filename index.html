@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>"Tranquility"</title>
+  <title>Twin Flame</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PixelMplus+1p&display=swap');
 
@@ -32,6 +32,7 @@
       display: block;
       margin-bottom: 1.2em;
       animation: floatUpDown 4s ease-in-out infinite;
+      font-family: 'PixelMplus 1p', monospace;
     }
 
     @keyframes floatUpDown {
@@ -40,10 +41,10 @@
     }
 
     .orange {
-      color: #d2691e; /* dark orange */
+      color: #d2691e;
     }
     .blue {
-      color: #1e90ff; /* dodger blue */
+      color: #1e90ff;
     }
     .darkred {
       color: #8b0000;
@@ -52,6 +53,7 @@
     .shaky {
       display: inline-block;
       position: relative;
+      transition: transform 0.1s ease-out;
     }
 
     @keyframes shake {
@@ -73,6 +75,7 @@
       user-select: none;
       color: white;
       z-index: 10;
+      font-family: 'Press Start 2P', cursive;
     }
     .prompt.bottomRight {
       font-size: 24px;
@@ -89,15 +92,30 @@
       50% { opacity: 1; }
       100% { opacity: 0.2; }
     }
+
+    #message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 48px;
+      color: white;
+      letter-spacing: 12px;
+      white-space: nowrap;
+      user-select: none;
+      display: none;
+      z-index: 20;
+    }
   </style>
 </head>
 <body>
   <div id="text"></div>
   <div class="prompt" id="prompt">(Z)</div>
+  <div id="message"></div>
 
-  <script>
-    // New script lines with empty lines indicating breaks (Z press)
-    const rawScript = `この死後の世界…
+<script>
+  const rawScript = `この死後の世界…
 
 この死後の世界…
 
@@ -121,153 +139,222 @@
 
 …そしたら教えてあげる！`;
 
-    // Split by double line breaks (empty lines)
-    const scenes = rawScript.split(/\n{2,}/).map(s => s.trim()).filter(s => s.length > 0);
+  const scenes = rawScript.split(/\n{2,}/).map(s => s.trim()).filter(s => s.length > 0);
 
-    // Words to color by line index and word: {lineIndex: {word: class}}
-    const coloredWords = {
-      8: { // line with "ちょっとした秘密があるの！" = "I've got a little secret"
-        "秘密": "darkred"
-      },
-      9: { // line with "太陽と月を見つけて…"
-        "太陽": "orange",
-        "月": "blue"
+  const coloredWords = {
+    8: { "秘密": "darkred" },
+    9: { "太陽": "orange", "月": "blue" }
+  };
+
+  let currentScene = 0;
+  let typing = false;
+  let index = 0;
+  let currentLineElement;
+  let typeInterval;
+  const textContainer = document.getElementById("text");
+  const prompt = document.getElementById("prompt");
+  const message = document.getElementById("message");
+  let promptInCenter = true;
+
+  const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playBeep(freq=90) {
+    const osc = beepCtx.createOscillator();
+    const gain = beepCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = "square";
+    gain.gain.value = 0.05;
+    osc.connect(gain);
+    gain.connect(beepCtx.destination);
+    osc.start();
+    osc.stop(beepCtx.currentTime + 0.05);
+  }
+
+  function createCharSpan(char, colorClass) {
+    const span = document.createElement("span");
+    span.textContent = char;
+    span.classList.add("shaky");
+    if(colorClass) span.classList.add(colorClass);
+    const delay = Math.random() * 4000 + 1000;
+    setInterval(() => {
+      span.style.animation = "shake 0.15s";
+      setTimeout(() => span.style.animation = "", 150);
+    }, delay);
+    return span;
+  }
+
+  function typeLine(text, colorMap = {}, lowPitchBeep = false) {
+    typing = true;
+    index = 0;
+    currentLineElement = document.createElement("div");
+    currentLineElement.className = "line";
+    textContainer.appendChild(currentLineElement);
+
+    typeInterval = setInterval(() => {
+      if(index >= text.length) {
+        clearInterval(typeInterval);
+        typing = false;
+        currentScene++;
+        return;
       }
-    };
 
-    let currentScene = 0;
-    let typing = false;
-    let index = 0;
-    let currentLineElement;
-    let typeInterval;
-    const textContainer = document.getElementById("text");
-    const prompt = document.getElementById("prompt");
-    let promptInCenter = true;
+      const char = text[index];
+      let appliedColor = null;
 
-    // Audio context for beep
-    const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep() {
-      const osc = beepCtx.createOscillator();
-      const gain = beepCtx.createGain();
-      osc.frequency.value = 90; // low pitch beep
-      osc.type = "square";
-      gain.gain.value = 0.05;
-      osc.connect(gain);
-      gain.connect(beepCtx.destination);
-      osc.start();
-      osc.stop(beepCtx.currentTime + 0.05);
-    }
+      for (const word in colorMap) {
+        if(text.startsWith(word, index)) {
+          appliedColor = colorMap[word];
+          for(let i=0; i<word.length; i++) {
+            currentLineElement.appendChild(createCharSpan(word[i], appliedColor));
+          }
+          index += word.length;
+          if(char !== " ") playBeep(lowPitchBeep ? 50 : 90);
+          return;
+        }
+      }
 
-    // Helper to create spans with shaky + color
-    function createCharSpan(char, colorClass) {
-      const span = document.createElement("span");
-      span.textContent = char;
-      span.classList.add("shaky");
-      if(colorClass) span.classList.add(colorClass);
+      currentLineElement.appendChild(createCharSpan(char, appliedColor));
+      if(char !== " ") playBeep(lowPitchBeep ? 50 : 90);
+      index++;
+    }, 100);
+  }
 
-      // Random shake offset between 1-5 seconds
-      const delay = Math.random() * 4000 + 1000;
-      setInterval(() => {
-        span.style.animation = "shake 0.15s";
-        setTimeout(() => span.style.animation = "", 150);
-      }, delay);
+  function skipTyping() {
+    if(!typing) return;
 
-      return span;
-    }
+    clearInterval(typeInterval);
 
-    function typeLine(text, colorMap = {}) {
-      typing = true;
-      index = 0;
+    const fullText = scenes[currentScene] || "";
+
+    if (!currentLineElement) {
       currentLineElement = document.createElement("div");
       currentLineElement.className = "line";
       textContainer.appendChild(currentLineElement);
-
-      typeInterval = setInterval(() => {
-        if(index >= text.length) {
-          clearInterval(typeInterval);
-          typing = false;
-          currentScene++;
-          return;
-        }
-
-        const char = text[index];
-
-        // Check if any colored word starts here
-        let appliedColor = null;
-        for (const word in colorMap) {
-          if(text.startsWith(word, index)) {
-            appliedColor = colorMap[word];
-            // append whole word at once with color
-            for(let i=0; i<word.length; i++) {
-              currentLineElement.appendChild(createCharSpan(word[i], appliedColor));
-            }
-            index += word.length;
-            if(char !== " ") playBeep();
-            return; // exit current call, continue next loop
-          }
-        }
-
-        currentLineElement.appendChild(createCharSpan(char, appliedColor));
-        if(char !== " ") playBeep();
-        index++;
-      }, 100);
-    }
-
-    function skipTyping() {
-      if(!typing) return;
-      clearInterval(typeInterval);
-      const fullText = scenes[currentScene];
+    } else {
       currentLineElement.textContent = "";
-      const colorMap = coloredWords[currentScene] || {};
-      let i = 0;
-      while(i < fullText.length) {
-        let appliedColor = null;
-        for (const word in colorMap) {
-          if(fullText.startsWith(word, i)) {
-            appliedColor = colorMap[word];
-            for(let j=0; j < word.length; j++) {
-              currentLineElement.appendChild(createCharSpan(word[j], appliedColor));
-            }
-            i += word.length;
-            break;
+    }
+
+    const colorMap = coloredWords[currentScene] || {};
+    let i = 0;
+    while(i < fullText.length) {
+      let appliedColor = null;
+      for (const word in colorMap) {
+        if(fullText.startsWith(word, i)) {
+          appliedColor = colorMap[word];
+          for(let j=0; j < word.length; j++) {
+            currentLineElement.appendChild(createCharSpan(word[j], appliedColor));
           }
-        }
-        if(!appliedColor) {
-          currentLineElement.appendChild(createCharSpan(fullText[i]));
-          i++;
+          i += word.length;
+          break;
         }
       }
-      typing = false;
-      currentScene++;
-    }
-
-    // Prompt animation and positioning
-    function movePromptToBottomRight() {
-      prompt.classList.add("bottomRight");
-      prompt.style.top = "";
-      prompt.style.left = "";
-      prompt.style.transform = "";
-      prompt.style.fontSize = "24px";
-      prompt.style.opacity = "0.6";
-      promptInCenter = false;
-    }
-
-    prompt.addEventListener("click", () => {
-      if(promptInCenter) {
-        movePromptToBottomRight();
-        typeLine(scenes[currentScene], coloredWords[currentScene] || {});
-      } else if(typing) {
-        skipTyping();
-      } else if(currentScene < scenes.length) {
-        typeLine(scenes[currentScene], coloredWords[currentScene] || {});
+      if(!appliedColor) {
+        currentLineElement.appendChild(createCharSpan(fullText[i]));
+        i++;
       }
+    }
+    typing = false;
+    currentScene++;
+  }
+
+  function movePromptToBottomRight() {
+    prompt.classList.add("bottomRight");
+    prompt.style.top = "";
+    prompt.style.left = "";
+    prompt.style.transform = "";
+    prompt.style.fontSize = "24px";
+    prompt.style.opacity = "0.6";
+    promptInCenter = false;
+  }
+
+  // Mouse move letter subtle movement effect
+  document.addEventListener("mousemove", (e) => {
+    const chars = document.querySelectorAll(".shaky");
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    chars.forEach(char => {
+      const rect = char.getBoundingClientRect();
+      const charX = rect.left + rect.width / 2;
+      const charY = rect.top + rect.height / 2;
+      const dx = mouseX - charX;
+      const dy = mouseY - charY;
+
+      const offsetX = (dx / window.innerWidth) * 5;
+      const offsetY = (dy / window.innerHeight) * 5;
+
+      char.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
     });
+  });
 
-    document.addEventListener("keydown", (e) => {
-      if(e.key.toLowerCase() === "z") {
+  document.addEventListener("mouseleave", () => {
+    document.querySelectorAll(".shaky").forEach(char => {
+      char.style.transform = "translate(0, 0)";
+    });
+  });
+
+  let focusLost = false;
+  let scenePlayedAfterFocusReturn = false;
+
+  function onFocus() {
+    if(focusLost && !scenePlayedAfterFocusReturn) {
+      focusLost = false;
+      scenePlayedAfterFocusReturn = true;
+      textContainer.innerHTML = "";
+      prompt.style.display = "none";
+      const msg = "See you very, very soon . . .  : )";
+      message.style.display = "block";
+      message.textContent = "";
+      let i = 0;
+      typing = true;
+      function step() {
+        if(i < msg.length) {
+          message.textContent += msg[i];
+          if(msg[i] !== " ") playBeep(50);
+          i++;
+          setTimeout(step, 250);
+        } else {
+          typing = false;
+          window.removeEventListener('focus', onFocus);
+          window.removeEventListener('blur', onBlur);
+          prompt.removeEventListener('click', onPromptClick);
+          document.removeEventListener('keydown', onKeyDown);
+        }
+      }
+      step();
+    }
+  }
+
+  function onBlur() {
+    if(!scenePlayedAfterFocusReturn) {
+      focusLost = true;
+    }
+  }
+
+  function onPromptClick() {
+    if(promptInCenter) {
+      movePromptToBottomRight();
+      typeLine(scenes[currentScene], coloredWords[currentScene] || {});
+    } else if(typing) {
+      skipTyping();
+    } else if(currentScene < scenes.length) {
+      typeLine(scenes[currentScene], coloredWords[currentScene] || {});
+    }
+  }
+
+  function onKeyDown(e) {
+    if(e.key.toLowerCase() === "z") {
+      if(typing) {
+        skipTyping();
+      } else {
         prompt.click();
       }
-    });
-  </script>
+    }
+  }
+
+  window.addEventListener('focus', onFocus);
+  window.addEventListener('blur', onBlur);
+  prompt.addEventListener("click", onPromptClick);
+  document.addEventListener("keydown", onKeyDown);
+</script>
 </body>
 </html>
