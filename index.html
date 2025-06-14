@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cutscene</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PixelMplus+1p&display=swap');
+
+    body {
+      margin: 0; padding: 20px;
+      background: black;
+      color: white;
+      font-family: 'Press Start 2P', 'PixelMplus 1p', monospace;
+      font-size: 28px;
+      white-space: nowrap;
+      overflow-x: auto;
+      height: 100vh;
+      position: relative;
+      user-select: none;
+    }
+
+    #text {
+      max-width: 700px;
+      line-height: 2.2em;
+      position: relative;
+      text-align: left;
+      overflow-x: auto;
+    }
+
+    .line {
+      position: relative;
+      display: block;
+      margin-bottom: 1.2em;
+      animation: floatUpDown 4s ease-in-out infinite;
+    }
+
+    @keyframes floatUpDown {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .orange {
+      color: #d2691e; /* dark orange */
+    }
+    .blue {
+      color: #1e90ff; /* dodger blue */
+    }
+    .darkred {
+      color: #8b0000;
+    }
+
+    .shaky {
+      display: inline-block;
+      position: relative;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(1px, -1px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .prompt {
+      position: fixed;
+      font-size: 80px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 1;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      animation: pulse 2.5s infinite;
+      user-select: none;
+      color: white;
+      z-index: 10;
+    }
+    .prompt.bottomRight {
+      font-size: 24px;
+      bottom: 10px;
+      right: 20px;
+      top: auto;
+      left: auto;
+      transform: none;
+      opacity: 0.6;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+  <div id="text"></div>
+  <div class="prompt" id="prompt">(Z)</div>
+
+  <script>
+    const scenes = [
+      "この世界は…",
+      "このクソったれの世界は…",
+      "その幸福な姿の裏に多くのものを隠している…",
+      "その「静けさ」…",
+      "私は汚れた秘密を持っている。",
+      "...",
+      "...",
+      "太陽と月を見つけろ。"
+    ];
+
+    // Words to color in each scene line (index and words)
+    const coloredWords = {
+      3: { // line with 「静けさ」 = tranquility
+        "静けさ": "darkred"
+      },
+      7: { // last line: "太陽" = sun (orange), "月" = moon (blue)
+        "太陽": "orange",
+        "月": "blue"
+      }
+    };
+
+    let currentScene = 0;
+    let typing = false;
+    let index = 0;
+    let currentLineElement;
+    let typeInterval;
+    const textContainer = document.getElementById("text");
+    const prompt = document.getElementById("prompt");
+    let promptInCenter = true;
+
+    // Audio context for beep
+    const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+      const osc = beepCtx.createOscillator();
+      const gain = beepCtx.createGain();
+      osc.frequency.value = 90; // low pitch beep
+      osc.type = "square";
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(beepCtx.destination);
+      osc.start();
+      osc.stop(beepCtx.currentTime + 0.05);
+    }
+
+    // Helper to create spans with shaky + color
+    function createCharSpan(char, colorClass) {
+      const span = document.createElement("span");
+      span.textContent = char;
+      span.classList.add("shaky");
+      if(colorClass) span.classList.add(colorClass);
+
+      // Random shake offset between 1-5 seconds
+      const delay = Math.random() * 4000 + 1000;
+      setInterval(() => {
+        span.style.animation = "shake 0.15s";
+        setTimeout(() => span.style.animation = "", 150);
+      }, delay);
+
+      return span;
+    }
+
+    function typeLine(text, colorMap = {}) {
+      typing = true;
+      index = 0;
+      currentLineElement = document.createElement("div");
+      currentLineElement.className = "line";
+      textContainer.appendChild(currentLineElement);
+
+      typeInterval = setInterval(() => {
+        if(index >= text.length) {
+          clearInterval(typeInterval);
+          typing = false;
+          currentScene++;
+          return;
+        }
+
+        const char = text[index];
+
+        // Check if any colored word starts here
+        let appliedColor = null;
+        // For color words, we have to check full words, so at this index see if any key matches ahead
+        for (const word in colorMap) {
+          if(text.startsWith(word, index)) {
+            appliedColor = colorMap[word];
+            // append whole word at once with color
+            for(let i=0; i<word.length; i++) {
+              currentLineElement.appendChild(createCharSpan(word[i], appliedColor));
+            }
+            index += word.length;
+            if(char !== " ") playBeep();
+            return; // exit current call, continue next loop
+          }
+        }
+
+        currentLineElement.appendChild(createCharSpan(char, appliedColor));
+        if(char !== " ") playBeep();
+        index++;
+      }, 100); // slower typing speed
+    }
+
+    function skipTyping() {
+      if(!typing) return;
+      clearInterval(typeInterval);
+      const fullText = scenes[currentScene];
+      currentLineElement.textContent = ""; // clear line
+      const colorMap = coloredWords[currentScene] || {};
+      // Render full text instantly with colors and shaky
+      let i = 0;
+      while(i < fullText.length) {
+        let appliedColor = null;
+        for (const word in colorMap) {
+          if(fullText.startsWith(word, i)) {
+            appliedColor = colorMap[word];
+            for(let j=0; j < word.length; j++) {
+              currentLineElement.appendChild(createCharSpan(word[j], appliedColor));
+            }
+            i += word.length;
+            break;
+          }
+        }
+        if(!appliedColor) {
+          currentLineElement.appendChild(createCharSpan(fullText[i]));
+          i++;
+        }
+      }
+      typing = false;
+      currentScene++;
+    }
+
+    // Handle prompt animation & position
+    function movePromptToBottomRight() {
+      prompt.classList.add("bottomRight");
+      prompt.style.top = "";
+      prompt.style.left = "";
+      prompt.style.transform = "";
+      prompt.style.fontSize = "24px";
+      prompt.style.opacity = "0.6";
+      promptInCenter = false;
+    }
+
+    prompt.addEventListener("click", () => {
+      if(promptInCenter) {
+        movePromptToBottomRight();
+        typeLine(scenes[currentScene], coloredWords[currentScene] || {});
+      } else if(typing) {
+        skipTyping();
+      } else if(currentScene < scenes.length) {
+        typeLine(scenes[currentScene], coloredWords[currentScene] || {});
+      }
+    });
+
+    // Optional: Also listen for Z key press
+    document.addEventListener("keydown", (e) => {
+      if(e.key.toLowerCase() === "z") {
+        prompt.click();
+      }
+    });
+  </script>
+</body>
+</html>
