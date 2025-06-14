@@ -96,23 +96,40 @@
   <div class="prompt" id="prompt">(Z)</div>
 
   <script>
-    const scenes = [
-      "この世界は…",
-      "このクソったれの世界は…",
-      "その幸福な姿の裏に多くのものを隠している…",
-      "その「静けさ」…",
-      "私は汚れた秘密を持っている。",
-      "...",
-      "...",
-      "太陽と月を見つけろ。"
-    ];
+    // New script lines with empty lines indicating breaks (Z press)
+    const rawScript = `この死後の世界…
 
-    // Words to color in each scene line (index and words)
+この死後の世界…
+
+冗談でしょ！
+
+私…
+
+…
+
+いや…
+
+誰か聞いてる？…
+
+…
+
+ヘヘヘヘヘ！！！
+
+ちょっとした秘密があるの！
+
+太陽と月を見つけて…
+
+…そしたら教えてあげる！`;
+
+    // Split by double line breaks (empty lines)
+    const scenes = rawScript.split(/\n{2,}/).map(s => s.trim()).filter(s => s.length > 0);
+
+    // Words to color by line index and word: {lineIndex: {word: class}}
     const coloredWords = {
-      3: { // line with 「静けさ」 = tranquility
-        "静けさ": "darkred"
+      8: { // line with "ちょっとした秘密があるの！" = "I've got a little secret"
+        "秘密": "darkred"
       },
-      7: { // last line: "太陽" = sun (orange), "月" = moon (blue)
+      9: { // line with "太陽と月を見つけて…"
         "太陽": "orange",
         "月": "blue"
       }
@@ -177,7 +194,6 @@
 
         // Check if any colored word starts here
         let appliedColor = null;
-        // For color words, we have to check full words, so at this index see if any key matches ahead
         for (const word in colorMap) {
           if(text.startsWith(word, index)) {
             appliedColor = colorMap[word];
@@ -194,16 +210,15 @@
         currentLineElement.appendChild(createCharSpan(char, appliedColor));
         if(char !== " ") playBeep();
         index++;
-      }, 100); // slower typing speed
+      }, 100);
     }
 
     function skipTyping() {
       if(!typing) return;
       clearInterval(typeInterval);
       const fullText = scenes[currentScene];
-      currentLineElement.textContent = ""; // clear line
+      currentLineElement.textContent = "";
       const colorMap = coloredWords[currentScene] || {};
-      // Render full text instantly with colors and shaky
       let i = 0;
       while(i < fullText.length) {
         let appliedColor = null;
@@ -226,7 +241,7 @@
       currentScene++;
     }
 
-    // Handle prompt animation & position
+    // Prompt animation and positioning
     function movePromptToBottomRight() {
       prompt.classList.add("bottomRight");
       prompt.style.top = "";
@@ -248,7 +263,6 @@
       }
     });
 
-    // Optional: Also listen for Z key press
     document.addEventListener("keydown", (e) => {
       if(e.key.toLowerCase() === "z") {
         prompt.click();
