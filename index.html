@@ -135,7 +135,7 @@
       transition: opacity 2s ease;
       width: 90%;
       max-width: 600px;
-      pointer-events: none;
+      pointer-events: auto;
       z-index: 20;
     }
   </style>
@@ -174,8 +174,8 @@
     let messageShown = false;
     const ctx = new AudioContext();
 
-    let zHoldStart = null;
-    let zHeldTooLong = false;
+    let wrongAttempts = 0;
+    let ignoreBlur = false;
 
     function playBeep(frequency = 90, volume = 0.02) {
       const osc = ctx.createOscillator();
@@ -210,9 +210,14 @@
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (input.value !== correct) {
+          wrongAttempts++;
+          if (wrongAttempts >= 3) {
+            messageBox.style.opacity = '0.3';
+          }
           input.value = '';
           boxes.forEach(b => b.textContent = '');
         } else {
+          wrongAttempts = 0;
           startMonologueSequence();
         }
       }
@@ -228,7 +233,9 @@
     boxesContainer.addEventListener('click', () => input.focus());
 
     window.addEventListener('blur', () => {
-      leaveCount++;
+      if (!ignoreBlur) {
+        leaveCount++;
+      }
     });
 
     window.addEventListener('focus', () => {
@@ -297,7 +304,7 @@
 
     async function startMonologueSequence() {
       monologueActive = true;
-      zHeldTooLong = false;
+      ignoreBlur = true;
 
       boxesContainer.style.transition = "opacity 2s ease";
       boxesContainer.style.opacity = "0";
@@ -357,19 +364,19 @@
 
       if (currentLineIndex >= monologueLines.length) {
         confessorPrompt.style.opacity = "0";
-
-        // Disable Z input after monologue ends always
         monologueActive = false;
 
-        if (zHeldTooLong) {
+        const fullMonologueText = monologueLines.join('\n');
+
+        if (monologueContainer.textContent.trim() !== fullMonologueText.trim()) {
           monologueContainer.style.transition = "opacity 2s ease";
           monologueContainer.style.opacity = "0.5";
 
-          // Wait 1.5 seconds before showing final joke text
           await new Promise(r => setTimeout(r, 1500));
 
           await showFinalMessage();
         }
+
         return;
       }
 
@@ -380,16 +387,8 @@
     window.addEventListener('keydown', async (e) => {
       if (!monologueActive) return;
       if (e.key.toLowerCase() === 'z') {
-        if (!zHoldStart) zHoldStart = Date.now();
         await showNextLine();
       }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (!monologueActive || e.key.toLowerCase() !== 'z' || !zHoldStart) return;
-      const heldTime = Date.now() - zHoldStart;
-      if (heldTime > 2500) zHeldTooLong = true;
-      zHoldStart = null;
     });
 
     confessorPrompt.addEventListener('click', async () => {
@@ -408,6 +407,8 @@
 
       finalMessage.textContent = "";
       finalMessage.style.opacity = "1";
+      finalMessage.style.pointerEvents = "auto";
+      finalMessage.style.zIndex = "9999";
 
       for (const line of finalLines) {
         await typeText(line, finalMessage, 30);
