@@ -138,6 +138,49 @@
       pointer-events: auto;
       z-index: 20;
     }
+
+    /* Webcam video styling */
+    #webcam {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 200px;
+      height: 150px;
+      border: 2px solid white;
+      z-index: 30;
+      object-fit: cover;
+    }
+
+    /* KHIMA options styling */
+    #khimaOptions {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 20px;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 16px;
+      color: white;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    #khimaOptions button {
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      padding: 10px 20px;
+      cursor: pointer;
+      user-select: none;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -159,6 +202,13 @@
 
   <div id="finalMessage"></div>
 
+  <video id="webcam" autoplay playsinline></video>
+
+  <div id="khimaOptions">
+    <button id="doNotBtn">DO NOT</button>
+    <button id="showBtn">SHOW</button>
+  </div>
+
   <script>
     const input = document.getElementById('hidden-input');
     const boxesContainer = document.getElementById('boxes');
@@ -168,6 +218,11 @@
     const joltLine = document.getElementById('joltLine');
     const monologueContainer = document.getElementById('monologueContainer');
     const finalMessage = document.getElementById('finalMessage');
+    const webcam = document.getElementById('webcam');
+    const khimaOptions = document.getElementById('khimaOptions');
+    const doNotBtn = document.getElementById('doNotBtn');
+    const showBtn = document.getElementById('showBtn');
+
     const correct = "LIMBO";
 
     let leaveCount = 0;
@@ -209,17 +264,21 @@
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        if (input.value !== correct) {
+        const val = input.value.toUpperCase();
+        if (val === "LIMBO") {
+          wrongAttempts = 0;
+          startMonologueSequence();
+        } else if (val === "KHIMA") {
+          wrongAttempts = 0;
+          startKhimaMonologueSequence();
+        } else {
           wrongAttempts++;
           if (wrongAttempts >= 3) {
             messageBox.style.opacity = '0.3';
           }
-          input.value = '';
-          boxes.forEach(b => b.textContent = '');
-        } else {
-          wrongAttempts = 0;
-          startMonologueSequence();
         }
+        input.value = '';
+        boxes.forEach(b => b.textContent = '');
       }
     });
 
@@ -296,11 +355,39 @@
       "silenced before their time"
     ];
 
+    const khimaMonologueLines = [
+      "ah",
+      "my CONFESSORS",
+      "thank you",
+      "thank you for showing me that i am not a detriment to the realm and its inhabitants",
+      "i could never thank you enough",
+      "truly",
+      "i am content with my existence",
+      "...",
+      "though",
+      "something troubles me",
+      "in our encounter",
+      "though there are no gods in this realm",
+      "i sensed a presence",
+      "a presence far beyond me",
+      "and you",
+      "...",
+      "if not for my tethering to the very stone that binds me",
+      "i could almost reach out",
+      "and",
+      "...",
+      "i wish to see YOU",
+      "...",
+      "that presence",
+      "..."
+    ];
+
     let currentLineIndex = 0;
     let monologueActive = false;
     let joltLineFadingOut = false;
 
-    const joltText = "*As if your hand grew a mind of its own, it began to jolt... and jolt... and jolt.";
+    let khimaCurrentLineIndex = 0;
+    let khimaMonologueActive = false;
 
     async function startMonologueSequence() {
       monologueActive = true;
@@ -318,7 +405,7 @@
       joltLine.textContent = "";
       joltLine.style.display = "block";
       joltLine.style.opacity = "1";
-      await typeText(joltText, joltLine, 60);
+      await typeText("*As if your hand grew a mind of its own, it began to jolt... and jolt... and jolt.", joltLine, 60);
 
       confessorPrompt.style.opacity = "1";
 
@@ -331,6 +418,37 @@
 
       monologueContainer.textContent = "";
       currentLineIndex = 0;
+    }
+
+    async function startKhimaMonologueSequence() {
+      khimaMonologueActive = true;
+      ignoreBlur = true;
+
+      boxesContainer.style.transition = "opacity 2s ease";
+      boxesContainer.style.opacity = "0";
+      input.style.transition = "opacity 2s ease";
+      input.style.opacity = "0";
+      messageBox.style.transition = "opacity 2s ease";
+      messageBox.style.opacity = "0";
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      joltLine.textContent = "";
+      joltLine.style.display = "block";
+      joltLine.style.opacity = "1";
+      await typeText("*The air thickens... Khima's presence emerges.*", joltLine, 60);
+
+      confessorPrompt.style.opacity = "1";
+
+      monologueContainer.style.opacity = "1";
+
+      input.disabled = true;
+      input.blur();
+      input.value = '';
+      boxes.forEach(b => b.textContent = '');
+
+      monologueContainer.textContent = "";
+      khimaCurrentLineIndex = 0;
     }
 
     async function typeText(text, container, delay = 40) {
@@ -365,6 +483,7 @@
       if (currentLineIndex >= monologueLines.length) {
         confessorPrompt.style.opacity = "0";
         monologueActive = false;
+        ignoreBlur = false;
 
         const fullMonologueText = monologueLines.join('\n');
 
@@ -384,16 +503,39 @@
       await typeText(line, monologueContainer);
     }
 
+    async function showNextKhimaLine() {
+      if (khimaCurrentLineIndex === 0 && joltLine.style.opacity === "1") {
+        joltLine.style.transition = "opacity 3s ease";
+        joltLine.style.opacity = "0";
+        setTimeout(() => {
+          joltLine.style.display = "none";
+        }, 3000);
+      }
+
+      if (khimaCurrentLineIndex >= khimaMonologueLines.length) {
+        confessorPrompt.style.opacity = "0";
+        khimaMonologueActive = false;
+        showKhimaOptions();
+        return;
+      }
+
+      const line = khimaMonologueLines[khimaCurrentLineIndex++];
+      await typeText(line, monologueContainer);
+    }
+
     window.addEventListener('keydown', async (e) => {
-      if (!monologueActive) return;
-      if (e.key.toLowerCase() === 'z') {
+      if (e.key.toLowerCase() !== 'z') return;
+
+      if (monologueActive) {
         await showNextLine();
+      } else if (khimaMonologueActive) {
+        await showNextKhimaLine();
       }
     });
 
     confessorPrompt.addEventListener('click', async () => {
-      if (!monologueActive) return;
-      await showNextLine();
+      if (monologueActive) await showNextLine();
+      else if (khimaMonologueActive) await showNextKhimaLine();
     });
 
     async function showFinalMessage() {
@@ -415,6 +557,36 @@
         await new Promise(r => setTimeout(r, 800));
       }
     }
+
+    async function requestWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        webcam.srcObject = stream;
+        webcam.style.display = 'block';
+      } catch (err) {
+        alert("Camera access denied or unavailable.");
+      }
+    }
+
+    function showKhimaOptions() {
+      khimaOptions.style.pointerEvents = 'auto';
+      khimaOptions.style.opacity = '1';
+    }
+
+    function hideKhimaOptions() {
+      khimaOptions.style.pointerEvents = 'none';
+      khimaOptions.style.opacity = '0';
+    }
+
+    doNotBtn.addEventListener('click', () => {
+      hideKhimaOptions();
+      ignoreBlur = false;
+    });
+
+    showBtn.addEventListener('click', () => {
+      hideKhimaOptions();
+      requestWebcam();
+    });
   </script>
 </body>
 </html>
