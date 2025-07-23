@@ -176,7 +176,6 @@
 
     let zHoldStart = null;
     let zHeldTooLong = false;
-    let monologueStarted = false;
 
     function playBeep(frequency = 90, volume = 0.02) {
       const osc = ctx.createOscillator();
@@ -229,15 +228,13 @@
     boxesContainer.addEventListener('click', () => input.focus());
 
     window.addEventListener('blur', () => {
-      if (!monologueStarted) leaveCount++;
+      leaveCount++;
     });
 
     window.addEventListener('focus', () => {
-      if (!monologueStarted) {
-        if (leaveCount >= 3 && !messageShown) {
-          messageBox.style.opacity = '0.3';
-          messageShown = true;
-        }
+      if (leaveCount >= 3 && !messageShown) {
+        messageBox.style.opacity = '0.3';
+        messageShown = true;
       }
     });
 
@@ -299,7 +296,6 @@
     const joltText = "*As if your hand grew a mind of its own, it began to jolt... and jolt... and jolt.";
 
     async function startMonologueSequence() {
-      monologueStarted = true;
       monologueActive = true;
       zHeldTooLong = false;
 
@@ -362,12 +358,14 @@
       if (currentLineIndex >= monologueLines.length) {
         confessorPrompt.style.opacity = "0";
 
+        // Disable Z input after monologue ends always
         monologueActive = false;
 
         if (zHeldTooLong) {
           monologueContainer.style.transition = "opacity 2s ease";
           monologueContainer.style.opacity = "0.5";
 
+          // Wait 1.5 seconds before showing final joke text
           await new Promise(r => setTimeout(r, 1500));
 
           await showFinalMessage();
