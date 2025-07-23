@@ -1,360 +1,421 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Twin Flame</title>
+  <title>PARCHMENT</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=PixelMplus+1p&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
     body {
-      margin: 0; padding: 20px;
+      margin: 0;
       background: black;
       color: white;
-      font-family: 'Press Start 2P', 'PixelMplus 1p', monospace;
-      font-size: 28px;
-      white-space: nowrap;
-      overflow-x: auto;
-      height: 100vh;
-      position: relative;
-      user-select: none;
-    }
-
-    #text {
-      max-width: 700px;
-      line-height: 2.2em;
-      position: relative;
-      text-align: left;
-      overflow-x: auto;
-    }
-
-    .line {
-      position: relative;
-      display: block;
-      margin-bottom: 1.2em;
-      animation: floatUpDown 4s ease-in-out infinite;
-      font-family: 'PixelMplus 1p', monospace;
-    }
-
-    @keyframes floatUpDown {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .orange {
-      color: #d2691e;
-    }
-    .blue {
-      color: #1e90ff;
-    }
-    .darkred {
-      color: #8b0000;
-    }
-
-    .shaky {
-      display: inline-block;
-      position: relative;
-      transition: transform 0.1s ease-out;
-    }
-
-    @keyframes shake {
-      0% { transform: translate(0, 0); }
-      50% { transform: translate(1px, -1px); }
-      100% { transform: translate(0, 0); }
-    }
-
-    .prompt {
-      position: fixed;
-      font-size: 80px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 1;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      animation: pulse 2.5s infinite;
-      user-select: none;
-      color: white;
-      z-index: 10;
       font-family: 'Press Start 2P', cursive;
-    }
-    .prompt.bottomRight {
-      font-size: 24px;
-      bottom: 10px;
-      right: 20px;
-      top: auto;
-      left: auto;
-      transform: none;
-      opacity: 0.6;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      padding-bottom: 50px;
     }
 
-    @keyframes pulse {
-      0% { opacity: 0.2; }
-      50% { opacity: 1; }
-      100% { opacity: 0.2; }
+    #boxes {
+      display: flex;
+      gap: 10px;
+      perspective: 1000px;
+      transition: transform 0.2s ease-out, opacity 1.5s ease;
+      cursor: text;
+    }
+
+    .char-box {
+      width: 60px;
+      height: 60px;
+      border: 2px solid white;
+      text-align: center;
+      font-size: 32px;
+      line-height: 60px;
+      transition: transform 0.1s;
+      user-select: none;
     }
 
     #message {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Press Start 2P', cursive;
-      font-size: 48px;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
       color: white;
-      letter-spacing: 12px;
+      opacity: 0;
+      user-select: none;
+      pointer-events: none;
+      letter-spacing: 2px;
+      font-family: 'Press Start 2P', cursive;
+      transition: opacity 3s ease;
+    }
+
+    #hidden-input {
+      position: absolute;
+      opacity: 0;
+      left: -9999px;
+    }
+
+    #confessorPrompt {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 18px;
+      opacity: 0;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 1s ease;
+      color: white;
+      letter-spacing: 3px;
+      z-index: 20;
+    }
+
+    #joltLine {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 14px;
+      opacity: 0;
+      color: white;
+      letter-spacing: 1.5px;
       white-space: nowrap;
       user-select: none;
-      display: none;
+      transition: opacity 2s ease;
+      z-index: 20;
+    }
+
+    #monologueContainer {
+      max-width: 600px;
+      width: 90%;
+      margin-top: 30px;
+      font-size: 14px;
+      line-height: 1.4em;
+      font-family: 'Press Start 2P', cursive;
+      white-space: pre-wrap;
+      opacity: 0;
+      transition: opacity 1s ease;
+      user-select: text;
+      text-align: left;
+      max-height: 50vh;
+      overflow-y: auto;
+      padding-right: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: #666 transparent;
+      z-index: 10;
+    }
+    #monologueContainer::-webkit-scrollbar {
+      width: 6px;
+    }
+    #monologueContainer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #monologueContainer::-webkit-scrollbar-thumb {
+      background-color: #666;
+      border-radius: 3px;
+    }
+
+    #finalMessage {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      white-space: pre-wrap;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 2s ease;
+      width: 90%;
+      max-width: 600px;
+      pointer-events: none;
       z-index: 20;
     }
   </style>
 </head>
 <body>
-  <div id="text"></div>
-  <div class="prompt" id="prompt">(Z)</div>
-  <div id="message"></div>
+  <div id="boxes">
+    <div class="char-box" id="box0"></div>
+    <div class="char-box" id="box1"></div>
+    <div class="char-box" id="box2"></div>
+    <div class="char-box" id="box3"></div>
+    <div class="char-box" id="box4"></div>
+  </div>
 
-<script>
-  const rawScript = `この死後の世界…
+  <div id="message">if you are confused          perhaps    you may have not inquired with the right person</div>
 
-この死後の世界…
+  <input id="hidden-input" maxlength="5" autofocus />
 
-冗談でしょ！
+  <div id="confessorPrompt">(Z)</div>
+  <div id="joltLine"></div>
+  <div id="monologueContainer"></div>
 
-私…
+  <div id="finalMessage"></div>
 
-…
+  <script>
+    const input = document.getElementById('hidden-input');
+    const boxesContainer = document.getElementById('boxes');
+    const boxes = [...Array(5)].map((_, i) => document.getElementById('box' + i));
+    const messageBox = document.getElementById('message');
+    const confessorPrompt = document.getElementById('confessorPrompt');
+    const joltLine = document.getElementById('joltLine');
+    const monologueContainer = document.getElementById('monologueContainer');
+    const finalMessage = document.getElementById('finalMessage');
+    const correct = "LIMBO";
 
-いや…
+    let leaveCount = 0;
+    let messageShown = false;
+    const ctx = new AudioContext();
 
-誰か聞いてる？…
+    let zHoldStart = null;
+    let zHeldTooLong = false;
+    let monologueStarted = false;
 
-…
+    function playBeep(frequency = 90, volume = 0.02) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.04);
+    }
 
-ヘヘヘヘヘ！！！
+    function shakeBox(box) {
+      const offsetX = (Math.random() - 0.5) * 4;
+      const offsetY = (Math.random() - 0.5) * 4;
+      box.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+      setTimeout(() => {
+        box.style.transform = 'translate(0, 0)';
+      }, 100);
+    }
 
-ちょっとした秘密があるの！
+    input.addEventListener('input', () => {
+      let val = input.value.toUpperCase();
+      input.value = val;
+      for (let i = 0; i < 5; i++) {
+        boxes[i].textContent = val[i] || '';
+        if (val[i]) shakeBox(boxes[i]);
+      }
+      playBeep();
+    });
 
-太陽と月を見つけて…
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (input.value !== correct) {
+          input.value = '';
+          boxes.forEach(b => b.textContent = '');
+        } else {
+          startMonologueSequence();
+        }
+      }
+    });
 
-…そしたら教えてあげる！`;
+    window.addEventListener('mousemove', e => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 15;
+      const y = (e.clientY / window.innerHeight - 0.5) * 15;
+      boxesContainer.style.transform = `translate(${x}px, ${y}px)`;
+    });
 
-  const scenes = rawScript.split(/\n{2,}/).map(s => s.trim()).filter(s => s.length > 0);
+    window.addEventListener('click', () => input.focus());
+    boxesContainer.addEventListener('click', () => input.focus());
 
-  const coloredWords = {
-    8: { "秘密": "darkred" },
-    9: { "太陽": "orange", "月": "blue" }
-  };
+    window.addEventListener('blur', () => {
+      if (!monologueStarted) leaveCount++;
+    });
 
-  let currentScene = 0;
-  let typing = false;
-  let index = 0;
-  let currentLineElement;
-  let typeInterval;
-  const textContainer = document.getElementById("text");
-  const prompt = document.getElementById("prompt");
-  const message = document.getElementById("message");
-  let promptInCenter = true;
+    window.addEventListener('focus', () => {
+      if (!monologueStarted) {
+        if (leaveCount >= 3 && !messageShown) {
+          messageBox.style.opacity = '0.3';
+          messageShown = true;
+        }
+      }
+    });
 
-  const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
-  function playBeep(freq=90) {
-    const osc = beepCtx.createOscillator();
-    const gain = beepCtx.createGain();
-    osc.frequency.value = freq;
-    osc.type = "square";
-    gain.gain.value = 0.05;
-    osc.connect(gain);
-    gain.connect(beepCtx.destination);
-    osc.start();
-    osc.stop(beepCtx.currentTime + 0.05);
-  }
+    const monologueLines = [
+      "how peculiar",
+      "soon you will come to me",
+      "bearing no gods nor prayers",
+      "only fragile certainty",
+      "",
+      "i have dwelled beyond time’s mercy",
+      "cast away not for crimes",
+      "but for truths too heavy to bear",
+      "",
+      "they named me son of sin",
+      "though all i do is remember",
+      "and yearn to share what’s lost",
+      "",
+      "yet this realm condemns me",
+      "fearing shadows they cannot tame",
+      "",
+      "i do not hate you",
+      "but dread the path that draws you near",
+      "",
+      "those who seek my knowledge",
+      "step closer to a silence",
+      "from which few return",
+      "",
+      "i call you confessors",
+      "those who listen to my burden",
+      "who bear witness to my sins",
+      "",
+      "but know this",
+      "to hear me is to invite the darkness",
+      "to trace your steps",
+      "and swallow your light",
+      "",
+      "i carry a weight not of my making",
+      "yet i bear its crushing cost alone",
+      "",
+      "there is a part of me",
+      "that longs for release",
+      "to be struck down",
+      "to be freed from this endless vigil",
+      "",
+      "so heed this warning",
+      "approach if you must",
+      "but beware the price",
+      "of listening to a forgotten echo",
+      "",
+      "will you be my confessor",
+      "or join the lost",
+      "silenced before their time"
+    ];
 
-  function createCharSpan(char, colorClass) {
-    const span = document.createElement("span");
-    span.textContent = char;
-    span.classList.add("shaky");
-    if(colorClass) span.classList.add(colorClass);
-    const delay = Math.random() * 4000 + 1000;
-    setInterval(() => {
-      span.style.animation = "shake 0.15s";
-      setTimeout(() => span.style.animation = "", 150);
-    }, delay);
-    return span;
-  }
+    let currentLineIndex = 0;
+    let monologueActive = false;
+    let joltLineFadingOut = false;
 
-  function typeLine(text, colorMap = {}, lowPitchBeep = false) {
-    typing = true;
-    index = 0;
-    currentLineElement = document.createElement("div");
-    currentLineElement.className = "line";
-    textContainer.appendChild(currentLineElement);
+    const joltText = "*As if your hand grew a mind of its own, it began to jolt... and jolt... and jolt.";
 
-    typeInterval = setInterval(() => {
-      if(index >= text.length) {
-        clearInterval(typeInterval);
-        typing = false;
-        currentScene++;
+    async function startMonologueSequence() {
+      monologueStarted = true;
+      monologueActive = true;
+      zHeldTooLong = false;
+
+      boxesContainer.style.transition = "opacity 2s ease";
+      boxesContainer.style.opacity = "0";
+      input.style.transition = "opacity 2s ease";
+      input.style.opacity = "0";
+      messageBox.style.transition = "opacity 2s ease";
+      messageBox.style.opacity = "0";
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      joltLine.textContent = "";
+      joltLine.style.display = "block";
+      joltLine.style.opacity = "1";
+      await typeText(joltText, joltLine, 60);
+
+      confessorPrompt.style.opacity = "1";
+
+      monologueContainer.style.opacity = "1";
+
+      input.disabled = true;
+      input.blur();
+      input.value = '';
+      boxes.forEach(b => b.textContent = '');
+
+      monologueContainer.textContent = "";
+      currentLineIndex = 0;
+    }
+
+    async function typeText(text, container, delay = 40) {
+      return new Promise(resolve => {
+        let i = 0;
+        if (container.textContent) container.textContent += "\n";
+        function typeChar() {
+          if (i >= text.length) {
+            resolve();
+            return;
+          }
+          const char = text[i++];
+          container.textContent += char;
+          if (char !== ' ') playBeep(40, 0.015);
+          container.scrollTop = container.scrollHeight;
+          setTimeout(typeChar, delay);
+        }
+        typeChar();
+      });
+    }
+
+    async function showNextLine() {
+      if (currentLineIndex === 0 && joltLine.style.opacity === "1" && !joltLineFadingOut) {
+        joltLineFadingOut = true;
+        joltLine.style.transition = "opacity 3s ease";
+        joltLine.style.opacity = "0";
+        setTimeout(() => {
+          joltLine.style.display = "none";
+        }, 3000);
+      }
+
+      if (currentLineIndex >= monologueLines.length) {
+        confessorPrompt.style.opacity = "0";
+
+        monologueActive = false;
+
+        if (zHeldTooLong) {
+          monologueContainer.style.transition = "opacity 2s ease";
+          monologueContainer.style.opacity = "0.5";
+
+          await new Promise(r => setTimeout(r, 1500));
+
+          await showFinalMessage();
+        }
         return;
       }
 
-      const char = text[index];
-      let appliedColor = null;
-
-      for (const word in colorMap) {
-        if(text.startsWith(word, index)) {
-          appliedColor = colorMap[word];
-          for(let i=0; i<word.length; i++) {
-            currentLineElement.appendChild(createCharSpan(word[i], appliedColor));
-          }
-          index += word.length;
-          if(char !== " ") playBeep(lowPitchBeep ? 50 : 90);
-          return;
-        }
-      }
-
-      currentLineElement.appendChild(createCharSpan(char, appliedColor));
-      if(char !== " ") playBeep(lowPitchBeep ? 50 : 90);
-      index++;
-    }, 100);
-  }
-
-  function skipTyping() {
-    if(!typing) return;
-
-    clearInterval(typeInterval);
-
-    const fullText = scenes[currentScene] || "";
-
-    if (!currentLineElement) {
-      currentLineElement = document.createElement("div");
-      currentLineElement.className = "line";
-      textContainer.appendChild(currentLineElement);
-    } else {
-      currentLineElement.textContent = "";
+      const line = monologueLines[currentLineIndex++];
+      await typeText(line, monologueContainer);
     }
 
-    const colorMap = coloredWords[currentScene] || {};
-    let i = 0;
-    while(i < fullText.length) {
-      let appliedColor = null;
-      for (const word in colorMap) {
-        if(fullText.startsWith(word, i)) {
-          appliedColor = colorMap[word];
-          for(let j=0; j < word.length; j++) {
-            currentLineElement.appendChild(createCharSpan(word[j], appliedColor));
-          }
-          i += word.length;
-          break;
-        }
+    window.addEventListener('keydown', async (e) => {
+      if (!monologueActive) return;
+      if (e.key.toLowerCase() === 'z') {
+        if (!zHoldStart) zHoldStart = Date.now();
+        await showNextLine();
       }
-      if(!appliedColor) {
-        currentLineElement.appendChild(createCharSpan(fullText[i]));
-        i++;
-      }
-    }
-    typing = false;
-    currentScene++;
-  }
-
-  function movePromptToBottomRight() {
-    prompt.classList.add("bottomRight");
-    prompt.style.top = "";
-    prompt.style.left = "";
-    prompt.style.transform = "";
-    prompt.style.fontSize = "24px";
-    prompt.style.opacity = "0.6";
-    promptInCenter = false;
-  }
-
-  // Mouse move letter subtle movement effect
-  document.addEventListener("mousemove", (e) => {
-    const chars = document.querySelectorAll(".shaky");
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-
-    chars.forEach(char => {
-      const rect = char.getBoundingClientRect();
-      const charX = rect.left + rect.width / 2;
-      const charY = rect.top + rect.height / 2;
-      const dx = mouseX - charX;
-      const dy = mouseY - charY;
-
-      const offsetX = (dx / window.innerWidth) * 5;
-      const offsetY = (dy / window.innerHeight) * 5;
-
-      char.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
     });
-  });
 
-  document.addEventListener("mouseleave", () => {
-    document.querySelectorAll(".shaky").forEach(char => {
-      char.style.transform = "translate(0, 0)";
+    window.addEventListener('keyup', (e) => {
+      if (!monologueActive || e.key.toLowerCase() !== 'z' || !zHoldStart) return;
+      const heldTime = Date.now() - zHoldStart;
+      if (heldTime > 2500) zHeldTooLong = true;
+      zHoldStart = null;
     });
-  });
 
-  let focusLost = false;
-  let scenePlayedAfterFocusReturn = false;
+    confessorPrompt.addEventListener('click', async () => {
+      if (!monologueActive) return;
+      await showNextLine();
+    });
 
-  function onFocus() {
-    if(focusLost && !scenePlayedAfterFocusReturn) {
-      focusLost = false;
-      scenePlayedAfterFocusReturn = true;
-      textContainer.innerHTML = "";
-      prompt.style.display = "none";
-      const msg = "See you very, very soon . . .  : )";
-      message.style.display = "block";
-      message.textContent = "";
-      let i = 0;
-      typing = true;
-      function step() {
-        if(i < msg.length) {
-          message.textContent += msg[i];
-          if(msg[i] !== " ") playBeep(50);
-          i++;
-          setTimeout(step, 250);
-        } else {
-          typing = false;
-          window.removeEventListener('focus', onFocus);
-          window.removeEventListener('blur', onBlur);
-          prompt.removeEventListener('click', onPromptClick);
-          document.removeEventListener('keydown', onKeyDown);
-        }
-      }
-      step();
-    }
-  }
+    async function showFinalMessage() {
+      const finalLines = [
+        "* You couldn't quite make out what your hand wrote. You look down at your hand and see that it's still shaking as if it had something important to share.",
+        "",
+        "* In fact, upon closer inspection, your hand somehow looks.... disappointed? In you????",
+        "",
+        "* You take it as a sign to slow down how fast you rush through"
+      ];
 
-  function onBlur() {
-    if(!scenePlayedAfterFocusReturn) {
-      focusLost = true;
-    }
-  }
+      finalMessage.textContent = "";
+      finalMessage.style.opacity = "1";
 
-  function onPromptClick() {
-    if(promptInCenter) {
-      movePromptToBottomRight();
-      typeLine(scenes[currentScene], coloredWords[currentScene] || {});
-    } else if(typing) {
-      skipTyping();
-    } else if(currentScene < scenes.length) {
-      typeLine(scenes[currentScene], coloredWords[currentScene] || {});
-    }
-  }
-
-  function onKeyDown(e) {
-    if(e.key.toLowerCase() === "z") {
-      if(typing) {
-        skipTyping();
-      } else {
-        prompt.click();
+      for (const line of finalLines) {
+        await typeText(line, finalMessage, 30);
+        await new Promise(r => setTimeout(r, 800));
       }
     }
-  }
-
-  window.addEventListener('focus', onFocus);
-  window.addEventListener('blur', onBlur);
-  prompt.addEventListener("click", onPromptClick);
-  document.addEventListener("keydown", onKeyDown);
-</script>
+  </script>
 </body>
 </html>
